@@ -70,6 +70,7 @@
     </Compile>
     <Compile Include="NP\Helper.cs" />
     <Compile Include="NP\Maths.cs" />
+    <Compile Include="NP\Matrix.cs" />
     <Compile Include="NP\Mem.cs" />
     <Compile Include="NP\mousespeed.cs" />
     <Compile Include="NP\Offsets.cs" />
@@ -78,6 +79,7 @@
     <Compile Include="NP\Vector2.cs" />
     <Compile Include="NP\Vector3.cs" />
     <Compile Include="NP\Vector4.cs" />
+    <Compile Include="NP\Word.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScanOffset.cs">

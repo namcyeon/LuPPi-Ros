@@ -190,27 +190,22 @@ namespace LUPPI
         private static bool autoaim = true;
         private static List<Entity> target = new List<Entity>();
         private static int heightAim = 0;
-        private static bool isBoxEsp = true;
+        private static bool isBoxEsp = false;
         private static bool isBoxNew = true;
         private static bool aimLeg = false;
-        private static bool Showbone = false;
+        private static bool Showbone = true;
         public Vector3 GetEncryptedPosition(int pEntity)
         {
             Vector3 Position;
             var xPos = Mem.ReadMemory<float>(pEntity + 0x10);
             var yPos = Mem.ReadMemory<float>(pEntity + 0x18);
             var zPos = Mem.ReadMemory<float>(pEntity + 0x20);
-
             var keyXAddr = Mem.ReadMemory<int>(pEntity + 0x14);
             var keyYAddr2 = Mem.ReadMemory<int>(pEntity + 0x1C);
             var keyZAddr3 = Mem.ReadMemory<int>(pEntity + 0x24);
-
             var a1 = Mem.ReadMemory<UInt32>(keyXAddr);
             var a2 = Mem.ReadMemory<UInt32>(keyYAddr2);
             var a3 = Mem.ReadMemory<UInt32>(keyZAddr3);
-
-
-
             uint xEnc = BitConverter.ToUInt32(BitConverter.GetBytes(xPos), 0); //Converting to Hex
             uint yEnc = BitConverter.ToUInt32(BitConverter.GetBytes(yPos), 0);
             uint zEnc = BitConverter.ToUInt32(BitConverter.GetBytes(zPos), 0);
@@ -268,95 +263,172 @@ namespace LUPPI
                 center.Y = (Height / 2) + 20;
                 d2d.BeginScene();
                 d2d.ClearScene(trains);
-                Vector2 vector3;
-                LocalPlayer = Mem.ReadMemory<int>(Mem.BaseAddress + Offsets.LocalPlayer);
-                Mem.ReadMemory<int>(Mem.BaseAddress + 0x22);
-                MyPosition = GetEncryptedPosition(LocalPlayer);
-                List<Entity> ls = ReadAllEntity();
-                d2d.DrawTextWithBackground("ENERMY : " + enemyCount.ToString() + " 💩", 10, 400, bigfont, redBrush,whiteBrush);
-                d2d.DrawTextWithBackground("AIM LEG: " + aimLeg.ToString(), 10, 370, bigfont, redBrush, whiteBrush);
-                for (int i = 0; i < ls.Count; i++)
+                if(Showbone)
                 {
-                    //ls[i].Coordinates.Y += 15f;
-                    ls[i].Coordinates = ls[i].GetEncryptedPosition();
-                    if (Maths.WorldToScreen(ls[i].Coordinates, out vector3, Width2, Height2))
+                    var m_pWorld = Mem.ReadMemory<int>(Mem.BaseAddress + Offsets.PyGame + 0x410);
+                    List<LUPPI.NP.Word> modal = new List<NP.Word>();
+                    var m_pSceneContext = Mem.ReadMemory<int>(m_pWorld + 0x8);
+                    var cameraBase = Mem.ReadMemory<int>(m_pSceneContext + 0x4);
+                    var viewMatrix = Mem.ReadMatrix<float>(cameraBase + 0xC4, 16);
+                    var pSkeletonList = Mem.ReadMemory<int>(m_pWorld + 0x290);
+                    int visibleCount = Mem.ReadMemory<int>(m_pWorld + 0x278);
+                    int coutene = 0;
+                    for (int i = 0; i < visibleCount; i++)
                     {
-                        int khoangCach = Helper.GetDistance(MyPosition, ls[i].Coordinates, 10);
-                        var widthhp = 0f;
-                        var widthhp2 = 0f;
-                        float numaim = 2f;
-                        if (ls[i].isPlayer && ls[i].hp > 0)
+                        int r_pModel = Mem.ReadMemory<int>(pSkeletonList + i);
+                        int m_pAnimator = Mem.ReadMemory<int>(r_pModel + 0x328);
+                        if (m_pAnimator > 1)
                         {
-                            float heiadd = 0f;
-                            bool flag3 = ls[i].pose == Pose.Standing;
-                            if (flag3)
+                            var intt = Mem.ReadMemory<int>(m_pAnimator + 0x528);
+                            //var bon = Mem.ReadMemory<int>(m_pAnimator + 0x970);
+                            var name = Mem.ReadString(intt, 35);
+                            //float[] b = Mem.ReadMatrix<float>(r_pModel + 0x3B0, 16);
+                            if (name.Contains("_male"))
                             {
-                                heiadd += 18.5f;
+                                coutene += 1;
+                                modal.Add(new NP.Word() { baseAdd = m_pAnimator, baseModal = r_pModel, isMen = true });
                             }
-                            bool flag4 = ls[i].pose == Pose.Prone;
-                            if (flag4)
+                            else if (name.Contains("_female"))
                             {
-                                heiadd += 12.5f;
-                                numaim = 1.6f;
+                                coutene += 1;
+                                modal.Add(new NP.Word() { baseAdd = m_pAnimator, baseModal = r_pModel, isMen = false });
                             }
-                            bool flag5 = ls[i].pose == Pose.Crouching;
-                            if (flag5)
+
+                        }
+                    }
+                    d2d.DrawTextWithBackground("ENERMY : " + (coutene - 1) + " 💩", 10, 400, bigfont, redBrush, whiteBrush);
+                    for (int i = 0; i < modal.Count; i++)
+                    {
+                        if (i == 0)//LOCALPLAYER POS
+                        {
+                            var m_Position1 = modal[i].pos;
+                            MyPosition.X = m_Position1[12];
+                            MyPosition.Y = m_Position1[13];
+                            MyPosition.Z = m_Position1[14];
+                        }
+                        //string name = modal[i].TypeName;
+                        //if (name.Contains("dataosha_male") || name.Contains("dataosha_female"))
+                        {
+                            var m_Position = modal[i].pos;
+                            Vector3 position;
+                            position.X = m_Position[12];
+                            position.Y = m_Position[13];
+                            position.Z = m_Position[14];
+                            var p = 0;
+                            for (int j = 0; j < 0xE80; j += 0x40)
                             {
-                                heiadd += 4f;
-                                numaim = 1.1f;
+                                var ab = Mem.ReadMemory<int>(modal[i].baseAdd + 0x970);
+                                var boneMatrix = Mem.ReadMatrix<float>(ab + j, 16);
+                                var bone4 = new LUPPI.NP.Matrix(boneMatrix);
+                                var bone24 = new LUPPI.NP.Matrix(m_Position);
+                                var result = LUPPI.NP.Matrix.Multiply(bone4, bone24);
+                                var vec3a = new Vector3(result.M41, result.M42, result.M43);
+                                Maths.WorldToScreen3(vec3a, viewMatrix, out var testeee, Width, Height);
+                                d2d.DrawText(p.ToString(), testeee.X, testeee.Y, font, whiteBrush);
+                                p++;
                             }
-                            Vector2 line1, line2, line3, line4, line5, line6, line7, line8;
-                            if (isBoxEsp)
+                            Maths.WorldToScreen(position, out var testee2, Width, Height);
+                            int khoangCach = Helper.GetDistance(MyPosition, position, 20);
+                            string tea = "[" + khoangCach + "m]";
+                            if (khoangCach < 150)
+                                d2d.DrawText(tea, testee2.X - tea.Length, testee2.Y, font, greenBrush2);
+                            else
+                                d2d.DrawText(tea, testee2.X - tea.Length, testee2.Y, font, whiteBrush);
+                        }
+                    }
+                }
+                if (isBoxEsp)
+                {
+                    Vector2 vector3;
+                    LocalPlayer = Mem.ReadMemory<int>(Mem.BaseAddress + Offsets.LocalPlayer);
+                    Mem.ReadMemory<int>(Mem.BaseAddress + 0x22);
+                    MyPosition = GetEncryptedPosition(LocalPlayer);
+                    List<Entity> ls = ReadAllEntity();
+                    d2d.DrawTextWithBackground("ENERMY : " + enemyCount.ToString() + " 💩", 10, 400, bigfont, redBrush, whiteBrush);
+                    d2d.DrawTextWithBackground("AIM LEG: " + aimLeg.ToString(), 10, 370, bigfont, redBrush, whiteBrush);
+                    for (int i = 0; i < ls.Count; i++)
+                    {
+                        //ls[i].Coordinates.Y += 15f;
+                        ls[i].Coordinates = ls[i].GetEncryptedPosition();
+                        if (Maths.WorldToScreen(ls[i].Coordinates, out vector3, Width2, Height2))
+                        {
+                            int khoangCach = Helper.GetDistance(MyPosition, ls[i].Coordinates, 10);
+                            var widthhp = 0f;
+                            var widthhp2 = 0f;
+                            float numaim = 2f;
+                            if (ls[i].isPlayer && ls[i].hp > 0)
                             {
-                                var a1 = ls[i].Coordinates.X;
-                                var a2 = ls[i].Coordinates.Y;
-                                var a3 = ls[i].Coordinates.Z;
-                                var v7 = a1 - 5.5f;
-                                var v8 = a2 - 2.5f;
-                                var v9 = a3 - 5.5f;
-                                var v10 = a1 + 5.5f;
-                                var v12 = a3 + 5.5f;
-                                if (Maths.WorldToScreen(new Vector3(v7, v8, v9), out line1, Width, Height))
+                                float heiadd = 0f;
+                                bool flag3 = ls[i].pose == Pose.Standing;
+                                if (flag3)
                                 {
-                                    var v4 = a2 + heiadd;
-                                    var v11 = a2 + heiadd;
-                                    var v13 = v4;
-                                    var v14 = v4;
-                                    if (Maths.WorldToScreen(new Vector3(v10, v4, v12), out line2, Width, Height))
+                                    heiadd += 18.5f;
+                                }
+                                bool flag4 = ls[i].pose == Pose.Prone;
+                                if (flag4)
+                                {
+                                    heiadd += 12.5f;
+                                    numaim = 1.6f;
+                                }
+                                bool flag5 = ls[i].pose == Pose.Crouching;
+                                if (flag5)
+                                {
+                                    heiadd += 4f;
+                                    numaim = 1.1f;
+                                }
+                                Vector2 line1, line2, line3, line4, line5, line6, line7, line8;
+                                if (isBoxEsp)
+                                {
+                                    var a1 = ls[i].Coordinates.X;
+                                    var a2 = ls[i].Coordinates.Y;
+                                    var a3 = ls[i].Coordinates.Z;
+                                    var v7 = a1 - 5.5f;
+                                    var v8 = a2 - 2.5f;
+                                    var v9 = a3 - 5.5f;
+                                    var v10 = a1 + 5.5f;
+                                    var v12 = a3 + 5.5f;
+                                    if (Maths.WorldToScreen(new Vector3(v7, v8, v9), out line1, Width, Height))
                                     {
-                                        if (Maths.WorldToScreen(new Vector3(v10, v8, v9), out line3, Width, Height))
+                                        var v4 = a2 + heiadd;
+                                        var v11 = a2 + heiadd;
+                                        var v13 = v4;
+                                        var v14 = v4;
+                                        if (Maths.WorldToScreen(new Vector3(v10, v4, v12), out line2, Width, Height))
                                         {
-                                            if (Maths.WorldToScreen(new Vector3(v7, v11, v9), out line4, Width, Height))
+                                            if (Maths.WorldToScreen(new Vector3(v10, v8, v9), out line3, Width, Height))
                                             {
-                                                if (Maths.WorldToScreen(new Vector3(v7, v8, v12), out line5, Width, Height))
+                                                if (Maths.WorldToScreen(new Vector3(v7, v11, v9), out line4, Width, Height))
                                                 {
-                                                    if (Maths.WorldToScreen(new Vector3(v7, v13, v12), out line6, Width, Height))
+                                                    if (Maths.WorldToScreen(new Vector3(v7, v8, v12), out line5, Width, Height))
                                                     {
-                                                        if (Maths.WorldToScreen(new Vector3(v10, v8, v12), out line7, Width, Height))
+                                                        if (Maths.WorldToScreen(new Vector3(v7, v13, v12), out line6, Width, Height))
                                                         {
-                                                            if (Maths.WorldToScreen(new Vector3(v10, v14, v9), out line8, Width, Height))
+                                                            if (Maths.WorldToScreen(new Vector3(v10, v8, v12), out line7, Width, Height))
                                                             {
-                                                                d2d.DrawLine(line1.X, line1.Y, line4.X, line4.Y, 1, whiteBrush);
-                                                                d2d.DrawLine(line3.X, line3.Y, line8.X, line8.Y, 1, whiteBrush);
-                                                                d2d.DrawLine(line7.X, line7.Y, line2.X, line2.Y, 1, whiteBrush);
-                                                                d2d.DrawLine(line5.X, line5.Y, line6.X, line6.Y, 1, whiteBrush);
+                                                                if (Maths.WorldToScreen(new Vector3(v10, v14, v9), out line8, Width, Height))
+                                                                {
+                                                                    d2d.DrawLine(line1.X, line1.Y, line4.X, line4.Y, 1, whiteBrush);
+                                                                    d2d.DrawLine(line3.X, line3.Y, line8.X, line8.Y, 1, whiteBrush);
+                                                                    d2d.DrawLine(line7.X, line7.Y, line2.X, line2.Y, 1, whiteBrush);
+                                                                    d2d.DrawLine(line5.X, line5.Y, line6.X, line6.Y, 1, whiteBrush);
 
-                                                                //Chan
-                                                                d2d.DrawLine(line1.X, line1.Y, line3.X, line3.Y, 1, whiteBrush);
-                                                                d2d.DrawLine(line3.X, line3.Y, line7.X, line7.Y, 1, whiteBrush);
-                                                                d2d.DrawLine(line7.X, line7.Y, line5.X, line5.Y, 1, whiteBrush);
-                                                                d2d.DrawLine(line5.X, line5.Y, line1.X, line1.Y, 1, whiteBrush);
+                                                                    //Chan
+                                                                    d2d.DrawLine(line1.X, line1.Y, line3.X, line3.Y, 1, whiteBrush);
+                                                                    d2d.DrawLine(line3.X, line3.Y, line7.X, line7.Y, 1, whiteBrush);
+                                                                    d2d.DrawLine(line7.X, line7.Y, line5.X, line5.Y, 1, whiteBrush);
+                                                                    d2d.DrawLine(line5.X, line5.Y, line1.X, line1.Y, 1, whiteBrush);
 
-                                                                //Dau
-                                                                d2d.DrawLine(line4.X, line4.Y, line8.X, line8.Y, 1, whiteBrush);
-                                                                d2d.DrawLine(line8.X, line8.Y, line2.X, line2.Y, 1, whiteBrush);
-                                                                d2d.DrawLine(line2.X, line2.Y, line6.X, line6.Y, 1, whiteBrush);
-                                                                d2d.DrawLine(line6.X, line6.Y, line4.X, line4.Y, 1, whiteBrush);
+                                                                    //Dau
+                                                                    d2d.DrawLine(line4.X, line4.Y, line8.X, line8.Y, 1, whiteBrush);
+                                                                    d2d.DrawLine(line8.X, line8.Y, line2.X, line2.Y, 1, whiteBrush);
+                                                                    d2d.DrawLine(line2.X, line2.Y, line6.X, line6.Y, 1, whiteBrush);
+                                                                    d2d.DrawLine(line6.X, line6.Y, line4.X, line4.Y, 1, whiteBrush);
 
-                                                                widthhp = (float)Helper.GetDistance2(line4, line2, 1);
-                                                                widthhp2 = (float)Helper.GetDistance2(line6, line8, 1);
-                                                                if (widthhp < widthhp2)
-                                                                    widthhp = widthhp2;
+                                                                    widthhp = (float)Helper.GetDistance2(line4, line2, 1);
+                                                                    widthhp2 = (float)Helper.GetDistance2(line6, line8, 1);
+                                                                    if (widthhp < widthhp2)
+                                                                        widthhp = widthhp2;
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -365,67 +437,67 @@ namespace LUPPI
                                         }
                                     }
                                 }
-                            }
-                            var dy = ls[i].Coordinates.X;
-                            var dy_4 = ls[i].Coordinates.Y;
-                            var v46 = ls[i].Coordinates.Z;
-                            var v27 = dy_4 + 27.0f;
-                            Vector2 aimpoint, aimpoint2;
-                            if (Maths.WorldToScreen(new Vector3(dy, v27, v46), out aimpoint, Width, Height))
-                            {
-                                string tea = ls[i].PlayerName + " [" + khoangCach + " m]";
-                                if (khoangCach < 150)
+                                var dy = ls[i].Coordinates.X;
+                                var dy_4 = ls[i].Coordinates.Y;
+                                var v46 = ls[i].Coordinates.Z;
+                                var v27 = dy_4 + 27.0f;
+                                Vector2 aimpoint, aimpoint2;
+                                if (Maths.WorldToScreen(new Vector3(dy, v27, v46), out aimpoint, Width, Height))
                                 {
-                                    d2d.DrawText(tea, aimpoint.X - tea.Length * 2, aimpoint.Y - 10, font, redBrush);
-                                }
-                                else
-                                {
-                                    d2d.DrawText(tea, aimpoint.X - tea.Length * 2, aimpoint.Y - 10, font, whiteBrush);
-                                }
-
-                                //Player HP
-                                if (ls[i].hp == 100)
-                                    d2d.DrawVerticalBar(ls[i].hp, aimpoint.X - widthhp / 2, aimpoint.Y - 15f, widthhp, 1, 3, greenBrush2, blackBrush);
-                                else
-                                    d2d.DrawVerticalBar(ls[i].hp, aimpoint.X - widthhp / 2, aimpoint.Y - 15f, widthhp, 1, 3, redBrush, blackBrush);
-                            }
-
-                            if (Maths.WorldToScreen(new Vector3(dy, v27, v46), out aimpoint, Width, Height2))
-                            {
-                                var v41 = dy_4 + heiadd;
-                                if (Maths.WorldToScreen(new Vector3(dy, v41, v46), out aimpoint2, Width, Height2))
-                                    if ((Maths.InsideCircle((int)center.X, (int)center.Y, 80, (int)aimpoint2.X, (int)aimpoint2.Y)))
+                                    string tea = ls[i].PlayerName + " [" + khoangCach + " m]";
+                                    if (khoangCach < 150)
                                     {
-                                        if (Keyboard.IsKeyDown(Keys.LShiftKey))
+                                        d2d.DrawText(tea, aimpoint.X - tea.Length * 2, aimpoint.Y - 10, font, redBrush);
+                                    }
+                                    else
+                                    {
+                                        d2d.DrawText(tea, aimpoint.X - tea.Length * 2, aimpoint.Y - 10, font, whiteBrush);
+                                    }
+
+                                    //Player HP
+                                    if (ls[i].hp == 100)
+                                        d2d.DrawVerticalBar(ls[i].hp, aimpoint.X - widthhp / 2, aimpoint.Y - 15f, widthhp, 1, 3, greenBrush2, blackBrush);
+                                    else
+                                        d2d.DrawVerticalBar(ls[i].hp, aimpoint.X - widthhp / 2, aimpoint.Y - 15f, widthhp, 1, 3, redBrush, blackBrush);
+                                }
+
+                                if (Maths.WorldToScreen(new Vector3(dy, v27, v46), out aimpoint, Width, Height2))
+                                {
+                                    var v41 = dy_4 + heiadd;
+                                    if (Maths.WorldToScreen(new Vector3(dy, v41, v46), out aimpoint2, Width, Height2))
+                                        if ((Maths.InsideCircle((int)center.X, (int)center.Y, 80, (int)aimpoint2.X, (int)aimpoint2.Y)))
                                         {
-                                            Cursor.Position = new Point((int)(aimpoint2.X), (int)(aimpoint2.Y));
-                                            if (Keyboard.IsKeyDown(Keys.LButton))
+                                            if (Keyboard.IsKeyDown(Keys.LShiftKey))
                                             {
-                                                Cursor.Position = new Point((int)(aimpoint2.X), (int)(aimpoint2.Y + ls[i].Pitch));
+                                                Cursor.Position = new Point((int)(aimpoint2.X), (int)(aimpoint2.Y));
+                                                if (Keyboard.IsKeyDown(Keys.LButton))
+                                                {
+                                                    Cursor.Position = new Point((int)(aimpoint2.X), (int)(aimpoint2.Y + ls[i].Pitch));
+                                                }
                                             }
                                         }
-                                    }
+                                }
                             }
-                        }
                             if (ls[i].isItem)
                             {
-                            if (ls[i].dropID == 1001 || ls[i].dropID == 1002 || ls[i].dropID == 1007 || ls[i].dropID == 1026)
-                            {
-                                d2d.DrawText2("[GUN]", vector3.X, vector3.Y, font, whiteBrush, greenBrush2);
-                            }
-                            else if (ls[i].dropID == 1273 || ls[i].dropID == 1274 || ls[i].dropID == 1275)
-                            {
-                                d2d.DrawText2("[SCOPE]", vector3.X, vector3.Y, font, whiteBrush, greenBrush2);
-                            }
-                            else if (khoangCach < 100)
-                            {
-                                //d2d.DrawText("[I]", vector3.X, vector3.Y, font, whiteBrush);
-                            }
+                                if (ls[i].dropID == 1001 || ls[i].dropID == 1002 || ls[i].dropID == 1007 || ls[i].dropID == 1026)
+                                {
+                                    d2d.DrawText2("[GUN]", vector3.X, vector3.Y, font, whiteBrush, greenBrush2);
+                                }
+                                else if (ls[i].dropID == 1273 || ls[i].dropID == 1274 || ls[i].dropID == 1275)
+                                {
+                                    d2d.DrawText2("[SCOPE]", vector3.X, vector3.Y, font, whiteBrush, greenBrush2);
+                                }
+                                else if (khoangCach < 100)
+                                {
+                                    //d2d.DrawText("[I]", vector3.X, vector3.Y, font, whiteBrush);
+                                }
                             }
                             if (ls[i].isItemDie && khoangCach < 100)
                             {
                                 d2d.DrawText2("[DIE]", vector3.X, vector3.Y, font, whiteBrush, greenBrush2);
                             }
+                        }
                     }
                 }
                 

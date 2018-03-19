@@ -34,3 +34,17 @@ J:\GIT\LUPPI\LUPPI\bin\Debug\SharpDX.Direct2D1.xml
 J:\GIT\LUPPI\LUPPI\bin\Debug\SharpDX.DXGI.xml
 J:\GIT\LUPPI\LUPPI\obj\Debug\LUPPI.Properties.Resources.resources
 J:\GIT\LUPPI\LUPPI\obj\Debug\LUPPI.csproj.CoreCompileInputs.cache
+J:\GIT\LuPPi-Ros\LUPPI\bin\Debug\LUPPI.exe.config
+J:\GIT\LuPPi-Ros\LUPPI\bin\Debug\LUPPI.exe
+J:\GIT\LuPPi-Ros\LUPPI\bin\Debug\LUPPI.pdb
+J:\GIT\LuPPi-Ros\LUPPI\bin\Debug\SharpDX.xml
+J:\GIT\LuPPi-Ros\LUPPI\bin\Debug\SharpDX.Direct2D1.xml
+J:\GIT\LuPPi-Ros\LUPPI\bin\Debug\SharpDX.DXGI.xml
+J:\GIT\LuPPi-Ros\LUPPI\obj\Debug\LUPPI.csprojResolveAssemblyReference.cache
+J:\GIT\LuPPi-Ros\LUPPI\obj\Debug\LUPPI.Luppi.resources
+J:\GIT\LuPPi-Ros\LUPPI\obj\Debug\LUPPI.Properties.Resources.resources
+J:\GIT\LuPPi-Ros\LUPPI\obj\Debug\LUPPI.ScanOffset.resources
+J:\GIT\LuPPi-Ros\LUPPI\obj\Debug\LUPPI.csproj.GenerateResource.Cache
+J:\GIT\LuPPi-Ros\LUPPI\obj\Debug\LUPPI.csproj.CoreCompileInputs.cache
+J:\GIT\LuPPi-Ros\LUPPI\obj\Debug\LUPPI.exe
+J:\GIT\LuPPi-Ros\LUPPI\obj\Debug\LUPPI.pdb

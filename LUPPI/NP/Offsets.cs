@@ -24,6 +24,7 @@
         public static int Grass = 0x29618588;
         public static int speed = 0x15E8C90;
         public static int zoom = 0x159BE55;
+        public static int PyGame = 0x20DCA48;
     }
 }
 

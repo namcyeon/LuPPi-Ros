@@ -79,6 +79,37 @@
             return true;
         }
 
+        public static bool WorldToScreen3(Vector3 pos, float[] matrix, out Vector2 screen, int windowWidth, int windowHeight)
+        {
+            Vector4 vector;
+            Vector3 vector2;
+            screen = new Vector2();
+            ViewMatrix = matrix;
+            vector.X = (((pos.X * ViewMatrix[0]) + (pos.Y * ViewMatrix[4])) + (pos.Z * ViewMatrix[8])) + ViewMatrix[12];
+            vector.Y = (((pos.X * ViewMatrix[1]) + (pos.Y * ViewMatrix[5])) + (pos.Z * ViewMatrix[9])) + ViewMatrix[13];
+            vector.Z = (((pos.X * ViewMatrix[2]) + (pos.Y * ViewMatrix[6])) + (pos.Z * ViewMatrix[10])) + ViewMatrix[14];
+            vector.W = (((pos.X * ViewMatrix[3]) + (pos.Y * ViewMatrix[7])) + (pos.Z * ViewMatrix[11])) + ViewMatrix[15];
+            /*string path = @"J:\WriteLines4.txt";
+            File.AppendAllText(path, String.Join(" ", ViewMatrix.Select(f => f.ToString(CultureInfo.CurrentCulture))));*/
+            if (vector.W < 0.010000001490116)
+            {
+                return false;
+            }
+            vector2.X = vector.X / vector.W;
+            vector2.Y = vector.Y / vector.W;
+            vector2.Z = vector.Z / vector.W;
+            //screen.X = ((windowWidth / 2) * vector2.X) + vector2.X + ((windowWidth / 2));
+            //screen.Y = -((windowHeight / 2) * vector2.Y) + ((windowHeight / 2));
+
+            screen.X = windowWidth / 2 + vector2.X + vector2.X * (windowWidth / 2);
+            screen.Y = vector2.Y + windowHeight / 2 - windowHeight / 2 * vector2.Y;
+            if (screen.X <= 0.0f)
+                screen.X = 0;
+            if (screen.Y <= 0.0f)
+                screen.Y = 0;
+            return true;
+        }
+
     }
 }
 
